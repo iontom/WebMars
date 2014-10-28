@@ -176,10 +176,10 @@ function createPlanet(scene, size, worldTextureUri, worldTextureNightUri, showHe
 	planetmesh.add(cloudmesh);
 
     if (showHexes) {
-	    var hexgeometry	= new THREE.IcosahedronGeometry(atmosphere.outerRadius + 0.01, 3);
+	    var hexgeometry	= new THREE.IcosahedronGeometry(atmosphere.outerRadius + 0.01, 4);
 	    setHexUVs(hexgeometry);
 	    var material	= new THREE.MeshBasicMaterial({
-	    	map: THREE.ImageUtils.loadTexture("images/hex02.png"),
+	    	map: THREE.ImageUtils.loadTexture("images/hex03.png"),
 	    	color: 0xFFFF00,
 	    	transparent: true,
 	    	opacity: 0.25

@@ -246,7 +246,7 @@
 
 			skymesh = drawSkyBox();
 			light = lights(scene);
-			bodies = [createPlanet(scene, 2, 'images/MARSmapCOL.jpg', 'images/MARSnight.jpg', false)]; // DO NOT PUT ABOVE 3 THIS CLASS IS A WORK IN PROGRESS
+			bodies = [createPlanet(scene, 2, 'images/MARSmapCOL.jpg', 'images/MARSnight.jpg', true)]; // DO NOT PUT ABOVE 3 THIS CLASS IS A WORK IN PROGRESS
 			bodies[0].planet.translateX(1.60); // let's just say that this is 149.60E6 km from the sun at (0,0,0).
 			
 			cameraTarget = bodies[0].planet;	// set the target to the planet by default
