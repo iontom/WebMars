@@ -19,7 +19,7 @@ function loadScene(simulation) {
 function addCamera(scene) {
     // put a camera in the scene
     var camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, .01, 50000);
-    camera.position.set(4, 0, 5);
+    camera.position.set(6, 0, 5);
     scene.add(camera); 
     return camera;
 }
@@ -41,11 +41,11 @@ function createPlanet(scene, size, worldTextureUri, worldTextureNightUri, showHe
 	var atmosphere = {
 	  Kr: 0.0025,
 	  Km: 0.0010,
-	  ESun: 20.0,
+	  ESun: 15.0,
 	  g: -0.950,
 	  innerRadius: size,
-	  outerRadius: size * 1.025,
-	  wavelength: [0.650, 0.570, 0.475],
+	  outerRadius: size * 1.015,
+	  wavelength: [0.550, 0.670, 0.670],
 	  scaleDepth: 0.25,
 	  mieScaleDepth: 0.1
 	};
@@ -168,14 +168,15 @@ function createPlanet(scene, size, worldTextureUri, worldTextureNightUri, showHe
 	var cloudgeometry	= new THREE.SphereGeometry(size + 0.02, 50, 50);
 	var cloudmaterial	= new THREE.MeshLambertMaterial({
 		map: THREE.ImageUtils.loadTexture("images/clouds.png"),
-		color: 0xFFFFFF,
+		color: 0x000000,
 		transparent: true,
-		opacity: 1.0});
+		reflectivity: 0.95,
+		opacity: 0.2});
 	var cloudmesh	= new THREE.Mesh(cloudgeometry, cloudmaterial); 
 	planetmesh.add(cloudmesh);
 
     if (showHexes) {
-	    var hexgeometry	= new THREE.IcosahedronGeometry(size + 0.01, 3);
+	    var hexgeometry	= new THREE.IcosahedronGeometry(atmosphere.outerRadius + 0.01, 3);
 	    setHexUVs(hexgeometry);
 	    var material	= new THREE.MeshBasicMaterial({
 	    	map: THREE.ImageUtils.loadTexture("images/hex02.png"),
