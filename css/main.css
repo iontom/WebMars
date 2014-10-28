@@ -1,0 +1,76 @@
+body {
+	overflow	: hidden;
+	padding		: 0;
+	margin		: 0;
+
+	color		: #222;
+	background-color: #BBB;
+	font-family	: arial;
+	font-size	: 100%;
+}
+select {
+    color: black;
+}
+input {
+    margin-bottom: 10px;
+}
+#info .top {
+	position	: absolute;
+	top		: 0px;
+	width		: 100%;
+	padding		: 5px;
+	text-align	: center;
+}
+#info a {
+	color		: #66F;
+	text-decoration	: none;
+}
+#info a:hover {
+	text-decoration	: underline;
+}
+.bottom {
+	position	: absolute;
+	bottom		: 0px;
+	right		: 5px;
+	padding		: 5px;
+	color		: #FFF;
+}
+#username {
+    color:#cccccc;
+}
+
+.no-close .ui-dialog-titlebar-close {
+	display: none;
+}
+
+#simulationsDialog > ul > li > a {
+    cursor: pointer;
+}
+
+.ui-dialog-titlebar {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+.ui-widget-header {
+    border: 1px solid #555;
+}
+    
+.ui-widget-content {
+    border: 1px solid #333333;
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+.ui-widget-content a {
+    color: #ffffff;
+}
+
+.no-show {
+    display: none;
+}
+
+.ui-widget-overlay {
+    background: #222222;
+    opacity: 0.95;
+}
+

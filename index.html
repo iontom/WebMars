@@ -1,0 +1,652 @@
+<!doctype html>
+<html>
+	<head>
+		<title>MetaSim - Alpha 0.7</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<meta name="description" content="First Generation WebGL Simulation">
+		<meta name="author" content="rSimulate Community">
+
+	<!--### 	Our libraries 			###-->
+		<script src="js/main.js"></script>
+		<script src="js/space_creator.js"></script>
+		<script src="js/physics/orbitlines.js"></script>
+		<script src="js/camera_target.js"></script>
+		
+	<!--### 	Three.js Files 			###-->
+		<!--<script src="vendor/three.js/Three.js"></script>-->
+		<script src="vendor/three.js/three.min.js"></script>
+		<script src="vendor/three.js/three-extras.min.js"></script>
+		<script src="vendor/three.js/OrbitControls.js"></script>
+		<script src="vendor/three.js/Detector.js"></script>
+		<!--<script src="vendor/dat.gui.min.js"></script>-->
+		<script src="vendor/three.js/Stats.js"></script>
+		<script src="vendor/threex/THREEx.screenshot.js"></script>
+		<script src="vendor/threex/THREEx.FullScreen.js"></script>
+		<script src="vendor/threex/THREEx.WindowResize.js"></script>
+		<script src="vendor/threex.dragpancontrols.js"></script>
+		<script src='vendor/threex/THREEx.KeyboardState.js'></script>
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src="vendor/random.js/random-0.26.js"></script>
+
+		<script src="js/main.js"></script>
+		<link  href="css/main.css" rel="stylesheet"/>
+
+        <!--### 	Other vendor imports 	###-->
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+
+		<!-- jquery-ui -->
+		<script src="vendor/jquery-ui-1.10.2.custom/js/jquery-ui-1.10.2.custom.js"></script>
+		<link  href="vendor/jquery-ui-1.10.2.custom/css/cupertino/jquery-ui-1.10.2.custom.css" rel="stylesheet"/>
+
+        <!-- shader files -->
+		<script src="shaders/vertexSky.vs" type="x-shader/x-vertex" id="vertexSky"></script>
+		<script src="shaders/fragmentSky.fs" type="x-shader/x-fragment" id="fragmentSky"></script>
+		<script src="shaders/vertexGround.vs" type="x-shader/x-vertex" id="vertexGround"></script>
+		<script src="shaders/fragmentGround.fs" type="x-shader/x-fragment" id="fragmentGround"></script>
+		
+        <!--### 	Bootstrap sand Styles 	###-->
+		<link  href="css/main.css" rel="stylesheet">
+        <link href="vendor/bootstrap/css/bootstrap.css" rel="stylesheet">
+		<style type="text/css">
+		  body {
+			padding-top: 40px;
+			padding-bottom: 40px;
+		  }
+		  .sidebar-nav {
+			padding: 9px 0;
+		  }
+
+		  @media (max-width: 980px) {
+			/* Enable use of floated navbar text */
+			.navbar-text.pull-right {
+			  float: none;
+			  padding-left: 5px;
+			  padding-right: 5px;
+			}
+		  }
+		</style>
+        <link href="vendor/bootstrap/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="../assets/js/html5shiv.js"></script>
+    <![endif]-->
+		<!-- Le fav and touch icons -->
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+			
+</head>
+<body>
+	<div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container-fluid">
+          <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="http://www.rsimulate.com">rSimulate</a>
+          <div class="nav-collapse collapse">
+            <p class="navbar-text pull-right">
+                <span id="userinfo">Login</span>
+            </p>
+            <ul class="nav">
+              <li class="active"><a href="#">About</a></li>
+              <li><a href="http://www.rsimulate.com/blog">Blog</a></li>
+			  <li><a href="http://www.rsimulate.com/forums">Forum</a></li>
+              <li><a href="#contact">Reddit</a></li>
+			  <li><a href="#contact">Github</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+	<!-- info on screen display -->
+
+		
+	<!-- three.js container -->
+    <!--<div class="container-fluid"> -->
+	<div id="container">
+	    <div id="info">
+	        <div class="top">
+            </div>
+		</div>
+	
+		<div class="bottom" id="inlineDoc" >
+			- <i>p</i> for screenshot
+			 n and m for time accel/decel
+		</div> 
+	</div> 
+
+	<script type="text/javascript">
+		var stats, scene, renderer, composer;
+		var moongeometry,moonmaterial,moonmesh;
+		var camera, cameraControls;
+		var cameraTarget;	// must be some object with a .position attribute,
+							// initialized to bodies[0].planet by default
+		var isCameraRotatingAutomatically = true;
+		var timeOfLastRender = 0;
+		var camorbitphase = 0;
+		var camsemimajoraxis = 3.0; 
+
+		// for tracking motion of the camera from body to body when selecting new target
+		var isCameraFlying = false;
+		var cameraFlightSource = null;
+		var cameraFlightDestination = null;
+		var cameraFlightDuration = 0;
+		var cameraFlightStartTime = 0;
+		var cameraFlightTarget = {};	// a moving target of our "spaceship" as the camera
+										// flies from body to body
+
+    var projector;
+		var gui;
+		var mouse = { x: 0, y: 0 };
+		var hexOutline;
+		var timeAccel = 1;
+
+		var camMODE = 1;
+		var camTARGET = 0;
+		var hexOutline, selectedHex;
+        var bodies = [];
+        var accessToken;
+
+		var shaders = {vertex: [], fragment: []};
+		var scene = new THREE.Scene();
+		var keyboard = new THREEx.KeyboardState();
+
+		function getLinkByRel(links, rel, fn) {
+			for (var i in links) {
+				if (links[i].rel == rel) {
+					return fn(links[i].href);
+				}
+			}
+			console.log('Could not find rel: ' + rel);
+			return null;
+		}
+
+
+		$(function(){
+            // With Stars For Eyes” (by h+) http://freemusicarchive.org/music/h_1657/Giga/Wood__Wire_-_GIGA_-_04_With_Stars_For_Eyes
+            // With Stars For Eyes by h+ is licensed under a Attribution-NonCommercial-NoDerivatives (aka Music Sharing) License.
+            //var audio = new Audio('audio/78caa984d4ead66a2cdf1e7216b6f2677fdbd791.mp3'); 
+            //audio.addEventListener('ended', function() {
+              //  audio.currentTime = 0;
+                //audio.play();
+            //}, false);
+            //audio.loop = false;
+            //audio.play();
+
+            //showLoginDialog();
+            //$('#logout').click(function() {
+                //disconnectUser();
+            //});
+			var $shaderScripts = $("script[type='x-shader/x-vertex']").
+				add("script[type='x-shader/x-fragment']");
+			var latch = $shaderScripts.length;
+			var decLatch = function(){
+				console.log('Loaded.');
+				latch--;
+				if (latch <= 0){
+					// all scripts have been loaded, init Three.js and WebGL
+					if(!init())	animate();
+				}
+			};
+			$shaderScripts.each(function(i, script){
+				var $script = $(script);
+				console.log('Loading shader from: ' + $script.attr('src') + ' ...');
+				$script.load($script.attr('src'), decLatch);
+			});
+		});
+
+		// init three.js
+		function init(){
+			if(Detector.webgl){
+				renderer = new THREE.WebGLRenderer({
+					antialias		: true,	// to get smoother output
+					preserveDrawingBuffer	: true,	// to allow screenshot
+					clearAlpha: 1
+				});
+				renderer.setClearColorHex(0xBBBBBB, 1);
+			}else{
+				Detector.addGetWebGLMessage();
+				return true;
+			}
+			renderer.setSize(window.innerWidth, window.innerHeight);
+			document.getElementById('container').appendChild(renderer.domElement);
+
+			stats = new Stats();
+			stats.domElement.style.position	= 'absolute';
+			stats.domElement.style.bottom	= '0px';
+			document.body.appendChild(stats.domElement);
+
+			// Project and particle material for testing ray intersection (object picking)
+			projector = new THREE.Projector();	
+
+			// put a camera in the scene
+            camera = addCamera(scene);
+
+			// create a camera contol
+      // no camera controls for menu
+			//cameraControls	= new THREE.OrbitControls(camera)
+
+			// transparently support window resize
+			THREEx.WindowResize.bind(renderer, camera);
+			// allow 'p' to make screenshot
+            //TODO: Make this a button rather than a hotkey, because it interferes with input boxes.
+			//THREEx.Screenshot.bindKey(renderer);
+			// allow 'f' to go fullscreen where this feature is supported
+            //TODO: Make this a button rather than a hotkey, because it interferes with input boxes.
+			//if(THREEx.FullScreen.available()){
+			//	THREEx.FullScreen.bindKey();		
+			//	document.getElementById('inlineDoc').innerHTML	+= "- <i>f</i> for fullscreen";
+			//}
+
+			skymesh = drawSkyBox();
+			light = lights(scene);
+			bodies = [createPlanet(scene, 2, 'images/MARSmap.jpg', 'images/TEWworld-night.jpg', false)]; // DO NOT PUT ABOVE 3 THIS CLASS IS A WORK IN PROGRESS
+			bodies[0].planet.translateX(1.60); // let's just say that this is 149.60E6 km from the sun at (0,0,0).
+			
+			cameraTarget = bodies[0].planet;	// set the target to the planet by default
+											// try "cameraTarget = moonmesh;"
+
+			var geometry = new THREE.Geometry();//PROTOCODE FOR orbits needs ecentricity
+			var radius = 149.6;
+			var i = 0;
+			while(i < 6.437) {
+			i += 0.01;
+			geometry.vertices.push(new THREE.Vector3(radius * Math.cos(i), 0 , radius * Math.sin(i))); 
+			
+			}
+			
+			var material = new THREE.LineBasicMaterial({
+				color: 0x0000FF,
+				linewidth: 10});
+			
+			var line = new THREE.Line(geometry, material);
+			//scene.add(line);
+			
+			
+				
+			var geometry = new THREE.Geometry();//moons orbital line
+			var radius = 15
+			var i = 0;
+			while(i < 6.437) {
+			    i += 0.01;
+			    geometry.vertices.push(new THREE.Vector3(radius * Math.cos(i) + bodies[0].planet.position.x, 0 , radius * Math.sin(i) + bodies[0].planet.position.z)); 
+			}
+			
+			var material = new THREE.LineBasicMaterial({
+				color: 0xFFFF00,
+				linewidth: 10});
+			
+			var line = new THREE.Line(geometry, material);
+			//scene.add(line);
+		}
+
+		// animation loop
+		function animate() {
+
+			// loop on request animation loop
+			// - it has to be at the begining of the function
+			// - see details at http://my.opera.com/emoller/blog/2011/12/20/requestanimationframe-for-smart-er-animating
+			requestAnimationFrame(animate);
+			
+			// update camera controls
+      		if (cameraControls) {
+				cameraControls.update();
+      		}
+			// do the render
+			render();
+
+			// update stats
+			stats.update();
+		}
+
+		// render the scene
+		function render() {
+			// variable which is increase by Math.PI every seconds - usefull for animation
+			var PIseconds	= Date.now() / 1000  * Math.PI;
+			var time = PIseconds * timeAccel;
+			var semimajoraxis = 7;    		// Turn into parameter
+			var eccentricity = 0.0549; 		// Turn into parameter
+			var angularvelocity = 0.003;		// Turn into paratmeter
+			var orbitphase = angularvelocity * time;
+			var radius = semimajoraxis * ((1.0 - eccentricity^2)/(1.0 + eccentricity * Math.cos(orbitphase)));
+			var inclination = 6.0 ;
+			var incRadian = (inclination / 180.0) * Math.PI;
+			var maxH = 2;
+			var height = maxH * Math.cos(incRadian) * Math.sin(orbitphase);
+    		var rotationspeed = 0.00002 * timeAccel; //need to study up on this relation to orbit and mass. 
+
+    		// if there is no camera target, there will be no auto-rotation,
+    		// and no following of a particular body; however the orbit camera controls
+    		// will still work as default on camera.position.
+    		if (cameraTarget) {
+				handleCameraRotation(time);
+			}
+			
+			if (isCameraFlying) {
+				handleCameraFlight();
+			}
+
+			// animation of all objects
+			// TODO
+
+			skymesh.position = camera.position;
+			var lightposition = light.position.clone().sub(bodies[0].planet.position).normalize();
+			var cameraHeight = camera.position.clone().sub(bodies[0].planet.position).length();
+			var planetInverse = new THREE.Matrix4();
+			planetInverse.getInverse(bodies[0].planet.matrixWorld.clone());
+
+  			bodies[0].atmosphere.material.uniforms.v3LightPosition.value = lightposition;
+  			bodies[0].atmosphere.material.uniforms.fCameraHeight.value = cameraHeight;
+  			bodies[0].atmosphere.material.uniforms.fCameraHeight2.value = cameraHeight * cameraHeight;
+  			bodies[0].atmosphere.material.uniforms.m4ModelInverse.value = planetInverse;
+  			bodies[0].planet.material.uniforms.v3CameraPosition.value = camera.position.clone();
+  			bodies[0].planet.material.uniforms.v3LightPosition.value = lightposition;
+  			bodies[0].planet.material.uniforms.fCameraHeight.value = cameraHeight;
+			bodies[0].planet.material.uniforms.fCameraHeight2.value = cameraHeight * cameraHeight;
+  			bodies[0].planet.material.uniforms.m4ModelInverse.value = planetInverse;
+
+  			timeOfLastRender = time;
+
+			// actually render the scene
+			renderer.render(scene, camera);
+		}
+
+		// destinationBody must be object with .position properties
+		// The reason for this is that we want to go to where the object will be,
+		// not where it is now.
+		// flightTime: time in ms to fly from source to destination in straight line
+		function flyCameraTo(destinationBody, flightTime) {
+			if (cameraTarget) {
+				console.log("flying to: ");
+				console.log(destinationBody);
+				console.log("t=" + flightTime);
+
+				isCameraFlying = true;
+				cameraFlightSource = cameraTarget;
+				cameraFlightDestination = destinationBody;
+				cameraFlightDuration = flightTime;
+				cameraFlightStartTime = Date.now();
+				cameraFlightTarget = {};
+			}
+			else {
+				console.log("no cameraTarget set to move from");
+			}
+		}
+
+
+		function handleCameraFlight() {
+			var currentTime = Date.now();
+			// check if we've arrived at our destination
+			if (Date.now() >= cameraFlightStartTime + cameraFlightDuration) {
+				// flight's over, reset values
+				cameraTarget = cameraFlightDestination;
+
+				cameraFlightDestination = null;
+				cameraFlightSource = null;
+				cameraFlightDuration = 0;
+				cameraFlightStartTime = 0;
+				cameraFlightTarget = {};
+
+				isCameraFlying = false;
+				return;
+			}
+
+			if (cameraFlightDestination && cameraFlightSource && cameraFlightDuration > 0) {
+				var totalFlightDistance = cameraFlightDestination.position.clone().sub(cameraFlightSource.position);
+
+				var flightProgress = (currentTime - cameraFlightStartTime) / cameraFlightDuration;	// 0 = at start, 1 = at dest
+
+				var currentFlightLocation = cameraFlightSource.position.clone().add(totalFlightDistance.multiplyScalar(flightProgress));
+
+				cameraFlightTarget.position = currentFlightLocation;
+				cameraTarget = cameraFlightTarget;
+			}
+		}
+
+		function addTestBodies(numBodies, minSize, maxSize, distance){
+
+			for (var i = 0; i < numBodies; i++) { 
+				var size = (Math.random()*maxSize)+minSize;
+
+
+				var testBodyGeometry	= new THREE.SphereGeometry(size, 50, 250);
+				var testBodyMaterial =new THREE.MeshPhongMaterial({
+			        // light
+			        specular: '#FFCCFF',
+			        // intermediate
+			        color: '#FF6666',
+			        // dark
+			        emissive: '#93004A',
+			        shininess: 100 
+			      });
+				var testBodyMesh	= new THREE.Mesh(testBodyGeometry, testBodyMaterial); 
+
+				var positionX = Math.floor((Math.random() * 2 * distance) - distance);
+				var positionY = Math.floor((Math.random() * 2 * distance) - distance);
+				var positionZ = Math.floor((Math.random() * 2 * distance) - distance);
+
+				testBodyMesh.position = new THREE.Vector3(positionX,positionY,positionZ);
+
+				scene.add(testBodyMesh);
+			}
+		}
+
+		function handleCameraRotation(time) {
+			// defining camera orbit properties
+			var camangularvelocity = 0.020;
+      		var camsemimajoraxis = 3; 
+      		var cameccentricity = 0.0549;
+
+      		var camradius = camsemimajoraxis * ((1.0 - cameccentricity^2)/(1.0 + cameccentricity * Math.cos(camorbitphase)));
+
+      		var cameraOffset = camera.position.clone().sub(cameraTarget.position);
+
+      		if (isCameraRotatingAutomatically) {
+      			// move the orbit along by the arc length since it was last updated
+        		camorbitphase += camangularvelocity * (time - timeOfLastRender);
+
+        		// keep the cam orbit phase within 2*pi radians
+        		camorbitphase %= 2.0 * Math.PI;
+      		} else {
+        		// we need to know where in the phase we've been dragged to,
+        		// so when rotation starts again it can be seamless
+        		camorbitphase = Math.atan2(cameraOffset.z,cameraOffset.x);
+      		}
+
+			// zoom can change the radius of our camera orbit
+			// knowing what the camorbitphase is, and what our current X-Z distance is from our target, we need to simulate winding the orbit to camorbitphase=0
+			// because that's where the distance will be the semimajor axis that we need to update to
+			// (note: this is all still in 2d, assuming orbits are on the X-Z plane)
+			var currentCamRadius = camsemimajoraxis * ((1.0 - cameccentricity^2)/(1.0 + cameccentricity * Math.cos(camorbitphase)));
+
+			var xzCameraTargetDistance = Math.sqrt(Math.pow(cameraOffset.x,2) + Math.pow(cameraOffset.z,2));
+
+			camsemimajoraxis *= (xzCameraTargetDistance / currentCamRadius);
+
+			if (isCameraRotatingAutomatically) {	
+				var camradius = camsemimajoraxis * ((1.0 - cameccentricity^2)/(1.0 + cameccentricity * Math.cos(camorbitphase)));
+				
+				camera.position.x = camradius * Math.cos(camorbitphase) + cameraTarget.position.x; //act on camera rotation.
+				camera.position.z = camradius * Math.sin(camorbitphase) + cameraTarget.position.z;
+			}
+
+      		if (cameraControls) {
+			   cameraControls.center = cameraTarget.position.clone();
+      		}
+			camera.lookAt(cameraTarget.position);
+		}
+
+		function checkDistance(x1, x2, x3, xt, yt, zt) {
+			return Math.sqrt(Math.pow((x1 - xt), 2) + Math.pow((x2 - yt), 2) + Math.pow((x3 - zt), 2));
+		} 
+
+
+		function setHexUVs(geometry){
+			for(var f in geometry.faceVertexUvs[0]){
+			  	var uvs = geometry.faceVertexUvs[0][f];
+			  	uvs[0] = new THREE.Vector2(0.20, 0.73);
+			  	uvs[1] = new THREE.Vector2(0.51, 0.15);
+			  	uvs[2] = new THREE.Vector2(0.78, 0.70);
+			}
+		}
+
+		document.addEventListener('mousemove', onDocumentMouseMove, false);
+		function onDocumentMouseMove(event) {
+			event.preventDefault();
+			mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+			mouse.y = - (event.clientY / window.innerHeight) * 2 + 1;
+		}
+
+		document.addEventListener('mouseup', onDocumentMouseUp, false);
+		function onDocumentMouseUp(event) {
+		    //event.preventDefault();
+
+		    isCameraRotatingAutomatically = true;
+		}
+
+		document.addEventListener('mousedown', onDocumentMouseDown, false);
+		function onDocumentMouseDown(event) {
+		    //event.preventDefault();
+		
+		    isCameraRotatingAutomatically = false;
+
+		    var vector = new THREE.Vector3(mouse.x, mouse.y, 1);
+		    projector.unprojectVector(vector, camera);
+
+			var raycaster = new THREE.Raycaster(
+				camera.position,
+				vector.sub(camera.position).normalize());
+
+			var intersects = raycaster.intersectObjects([bodies[0].hex]);	
+		    if (intersects.length > 0) {
+				var p = intersects[ 0 ].point;
+				var v0 = intersects[ 0 ].face.a;
+				var v1 = intersects[ 0 ].face.b;
+				var v2 = intersects[ 0 ].face.c;
+				var d0 = p.sub(intersects[ 0 ].object.geometry.vertices[v0]).lengthSq();
+				var d1 = p.sub(intersects[ 0 ].object.geometry.vertices[v1]).lengthSq();
+				var d2 = p.sub(intersects[ 0 ].object.geometry.vertices[v2]).lengthSq();
+
+				// v is the vertex id closest to the intersection point and also
+				// the vertex id of the center of the hexagon
+				var v;
+				if (d0 < d1 && d0 < d2) {
+					v = v0;
+				} else if (d1 < d0 && d1 < d2) {
+					v = v1;
+				}  else if (d2 < d0 && d2 < d1) {
+					v = v2;
+				}
+
+				// save selectedHex for later for use in getSelectedHex, findNeighbors, isPentagon.
+				selectedHex = { object: intersects[0].object, id: v };
+
+				// find all of the centers of faces that share the vertex id of the of the center of the hex
+				var hexVertices = [];
+				for (var i in intersects[0].object.geometry.faces) {
+					var face = intersects[0].object.geometry.faces[i];
+					if (face.a == v || face.b == v || face.c == v) {
+						hexVertices.push(face.centroid);
+					}
+				}
+				// sort by closest to last vertex to get correct order
+				var sortedHexVertices = [hexVertices.pop()];
+				do {
+					var lastSortedVertex = sortedHexVertices[sortedHexVertices.length - 1];
+					// find vertex closest to last sorted vertex
+					var dSqMin = Infinity;
+					var idx;
+					for (var i in hexVertices) {
+						var dSq = lastSortedVertex.clone().sub(hexVertices[i]).lengthSq();
+						if (dSq < dSqMin) {
+							dSqMin = dSq;
+							idx = i;
+						}
+					}
+					// move hex vertex to end of sorted list
+					sortedHexVertices.push(hexVertices[idx]);
+					hexVertices.splice(idx, 1);
+				} while (hexVertices.length > 1);
+				sortedHexVertices.push(hexVertices[0]);
+
+				// create a new geometry and add points to it that are the center of all of the faces of the hex
+				var geometry = new THREE.Geometry();
+				for (var i in sortedHexVertices) {
+					var v = sortedHexVertices[i];
+					geometry.vertices.push(v);
+				}
+				// push first vertex again to form a loop
+				geometry.vertices.push(sortedHexVertices[0]);
+				// wrap around a little more so that line joining works correctly between the start and end points
+				geometry.vertices.push(sortedHexVertices[1]);
+
+				var material = new THREE.LineBasicMaterial({
+					color: 0xFF0000,
+					linewidth: 5});
+
+				// remove the outline if it already exists
+				if (hexOutline != null || hexOutline != undefined) {
+					bodies[0].planet.remove(hexOutline);
+				}
+				hexOutline = new THREE.Line(geometry, material);
+				hexOutline.scale.x = 1.01;
+				hexOutline.scale.y = 1.01;
+				hexOutline.scale.z = 1.01;
+
+				
+				bodies[0].planet.add(hexOutline);
+				console.log("selected hex: " + getSelectedHex().object.name + " " + getSelectedHex().id);
+				console.log("neighbors: " + JSON.stringify($.map(findNeighbors(getSelectedHex()), function(e) {
+					return e.id})));
+				console.log("isPentagon?: " + JSON.stringify(isPentagon(getSelectedHex())));
+		    }
+		}		
+		// Returns undefined if no hex has been selected or returns {mesh: Object, id: int}
+		function getSelectedHex() {
+			return selectedHex;
+		}
+
+		function findNeighbors(hex) {
+			// find all of the vertices of faces that share a vertex with the center of the hex 
+			var neighborVertices = [];
+			for (var i in hex.object.geometry.faces) {
+				var face = hex.object.geometry.faces[i];
+				if (face.a == hex.id) {
+					neighborVertices.push(face.b);
+					neighborVertices.push(face.c);
+				} else if (face.b == hex.id) {
+					neighborVertices.push(face.a);
+					neighborVertices.push(face.c);
+				} else if (face.c == hex.id) {
+					neighborVertices.push(face.a);
+					neighborVertices.push(face.b);
+				}
+			}
+
+			// remove duplicate entries
+			return $.map(neighborVertices.filter(function(elem, pos, self) {
+				return self.indexOf(elem) == pos;
+			}), function (elem) {
+				return { object: hex.object, id: elem };
+			});
+		}
+
+		function isPentagon(hex) {
+			return findNeighbors(hex).length == 5;
+		}
+	</script>
+    <script type="text/javascript">
+      (function() {
+       var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+       po.src = 'https://apis.google.com/js/client:plusone.js';
+       var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+     })();
+    </script> 
+</body>
+</html>
