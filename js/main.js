@@ -45,7 +45,7 @@ function createPlanet(scene, size, worldTextureUri, worldTextureNightUri, showHe
 	  g: -0.950,
 	  innerRadius: size,
 	  outerRadius: size * 1.015,
-	  wavelength: [0.550, 0.670, 0.670],
+	  wavelength: [0.650, 0.670, 0.670],
 	  scaleDepth: 0.25,
 	  mieScaleDepth: 0.1
 	};
